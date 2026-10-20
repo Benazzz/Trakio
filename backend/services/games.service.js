@@ -41,6 +41,6 @@ export const updateGame = async (id, data) => {
 };
 
 export const deleteGame = async (id) => {
-  const result = await pool.query("DELETE FROM games WHERE id = $1", [id]);
+  const result = await pool.query("DELETE FROM games WHERE id = $1 ORDER BY id", [id]);
   return result.rowCount;
 };
