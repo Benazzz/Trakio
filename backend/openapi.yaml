@@ -1,0 +1,681 @@
+openapi: 3.0.3
+info:
+  title: Trakio API
+  version: 1.0.0
+  description: |
+    REST API realaus laiko, lokacija pagrįstam slėpynių žaidimui „Trakio“.
+
+    Hierarchija: **Game → Round → Event**. Raundai pasiekiami tik per žaidimą,
+    įvykiai – tik per raundą (`/games/{gameId}/rounds/{roundId}/events`).
+
+    Visi atsakymai – `application/json`. Klaidos grąžinamos formatu `{ "error": "..." }`.
+servers:
+  - url: http://localhost:3000
+    description: Lokali aplinka
+
+tags:
+  - name: Games
+    description: Žaidimai
+  - name: Rounds
+    description: Žaidimo raundai (vienas slėpimosi ėjimas)
+  - name: Events
+    description: Raundo įvykiai – klausimai ir užduotys
+
+paths:
+  /games:
+    get:
+      tags: [Games]
+      summary: Žaidimų sąrašas (puslapiavimas ir filtravimas)
+      operationId: getAllGames
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          description: Filtras pagal žaidimo būseną
+          schema: { $ref: '#/components/schemas/GameStatus' }
+        - name: is_public
+          in: query
+          description: Filtras pagal viešumą
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Žaidimų puslapis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameList' }
+              example:
+                data:
+                  - id: 4
+                    name: Ąžuolyno vakaras
+                    created_by: 2
+                    zone_id: 4
+                    status: lobby
+                    is_public: true
+                    is_locked: false
+                    max_players: 4
+                    head_start_min: 10
+                    created_at: '2026-10-18T06:30:00.000Z'
+                    started_at: null
+                    ended_at: null
+                    _links:
+                      self: { href: /games/4 }
+                      rounds: { href: /games/4/rounds }
+                page: 1
+                limit: 10
+                total: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [Games]
+      summary: Sukurti žaidimą
+      operationId: createGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GameCreate' }
+            example:
+              name: Testinis žaidimas
+              created_by: 2
+              zone_id: 1
+              is_public: true
+              max_players: 4
+              head_start_min: 10
+      responses:
+        '201':
+          description: Žaidimas sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Game' }
+              example:
+                id: 7
+                name: Testinis žaidimas
+                created_by: 2
+                zone_id: 1
+                status: lobby
+                is_public: true
+                is_locked: false
+                max_players: 4
+                head_start_min: 10
+                created_at: '2026-10-21T14:00:00.000Z'
+                started_at: null
+                ended_at: null
+                _links:
+                  self: { href: /games/7 }
+                  rounds: { href: /games/7/rounds }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+
+  /games/{gameId}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      tags: [Games]
+      summary: Žaidimo detalės (agreguotas resursas – žaidimas, zona, kūrėjas, žaidėjai)
+      operationId: getGame
+      responses:
+        '200':
+          description: Žaidimas su susijusiais duomenimis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameDetails' }
+              example:
+                id: 1
+                name: Senamiesčio slėpynės
+                created_by: 2
+                zone_id: 1
+                status: finished
+                is_public: true
+                is_locked: true
+                max_players: 6
+                head_start_min: 15
+                created_at: '2026-10-03T17:00:00.000Z'
+                started_at: '2026-10-04T11:00:00.000Z'
+                ended_at: '2026-10-04T14:20:00.000Z'
+                zone: { id: 1, name: Senamiestis, city: Kaunas }
+                creator: { id: 2, username: tomas_k }
+                players:
+                  - { id: 2, username: tomas_k }
+                  - { id: 3, username: ieva.p }
+                _links:
+                  self: { href: /games/1 }
+                  rounds: { href: /games/1/rounds }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Games]
+      summary: Atnaujinti žaidimą
+      operationId: updateGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GameUpdate' }
+            example:
+              name: Senamiesčio slėpynės
+              is_public: true
+              is_locked: true
+              max_players: 6
+              head_start_min: 20
+      responses:
+        '200':
+          description: Žaidimas atnaujintas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Game' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+    delete:
+      tags: [Games]
+      summary: Ištrinti žaidimą (kartu ištrinami jo raundai ir įvykiai)
+      operationId: deleteGame
+      responses:
+        '204':
+          description: Žaidimas ištrintas
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /games/{gameId}/rounds:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      tags: [Rounds]
+      summary: Žaidimo raundų sąrašas
+      operationId: getAllRounds
+      responses:
+        '200':
+          description: Raundai pagal eilės numerį
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Round' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Rounds]
+      summary: Sukurti naują raundą (numeris parenkamas automatiškai)
+      description: Request body nereikalingas. Raundo negalima pridėti prie baigto žaidimo.
+      operationId: createRound
+      responses:
+        '201':
+          description: Raundas sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+              example:
+                id: 9
+                game_id: 4
+                found_by: null
+                round_number: 1
+                status: pending
+                started_at: null
+                ended_at: null
+                _links:
+                  self: { href: /games/4/rounds/9 }
+                  game: { href: /games/4 }
+                  events: { href: /games/4/rounds/9/events }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Žaidimas jau baigtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Cannot add a round to a finished game }
+
+  /games/{gameId}/rounds/{roundId}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+      - $ref: '#/components/parameters/RoundId'
+    get:
+      tags: [Rounds]
+      summary: Vienas raundas
+      operationId: getRound
+      responses:
+        '200':
+          description: Raundas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+              example:
+                id: 1
+                game_id: 1
+                found_by: 2
+                round_number: 1
+                status: finished
+                started_at: '2026-10-04T11:00:00.000Z'
+                ended_at: '2026-10-04T11:52:00.000Z'
+                _links:
+                  self: { href: /games/1/rounds/1 }
+                  game: { href: /games/1 }
+                  events: { href: /games/1/rounds/1/events }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Žaidimas arba raundas (šiame žaidime) nerastas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Round not found }
+    put:
+      tags: [Rounds]
+      summary: Atnaujinti raundą
+      operationId: updateRound
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoundUpdate' }
+            example:
+              status: active
+              started_at: '2026-10-20T10:00:00Z'
+              ended_at: null
+              found_by: null
+      responses:
+        '200':
+          description: Raundas atnaujintas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Žaidime jau yra aktyvus raundas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Resource already exists }
+        '422':
+          description: ended_at ankstesnis už started_at arba found_by naudotojas neegzistuoja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Value violates a constraint }
+    delete:
+      tags: [Rounds]
+      summary: Ištrinti raundą (kartu ištrinami jo įvykiai)
+      operationId: deleteRound
+      responses:
+        '204':
+          description: Raundas ištrintas
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /games/{gameId}/rounds/{roundId}/events:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+      - $ref: '#/components/parameters/RoundId'
+    get:
+      tags: [Events]
+      summary: Raundo įvykių sąrašas (hierarchinis – apima visus 3 objektus)
+      operationId: getAllEvents
+      responses:
+        '200':
+          description: Įvykiai pagal sukūrimo laiką
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Event' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Events]
+      summary: Sukurti įvykį (klausimą ar užduotį) aktyviame raunde
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventCreate' }
+            example: { template_id: 12, created_by: 6 }
+      responses:
+        '201':
+          description: Įvykis sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+              example:
+                id: 18
+                round_id: 8
+                template_id: 12
+                created_by: 6
+                resolved_by: null
+                status: pending
+                answer: null
+                created_at: '2026-10-21T14:10:00.000Z'
+                resolved_at: null
+                _links:
+                  self: { href: /games/3/rounds/8/events/18 }
+                  round: { href: /games/3/rounds/8 }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Raundas neaktyvus arba šablonas neegzistuoja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Events can only be added to an active round }
+
+  /games/{gameId}/rounds/{roundId}/events/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+      - $ref: '#/components/parameters/RoundId'
+      - $ref: '#/components/parameters/EventId'
+    get:
+      tags: [Events]
+      summary: Vienas įvykis
+      operationId: getEvent
+      responses:
+        '200':
+          description: Įvykis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+              example:
+                id: 16
+                round_id: 8
+                template_id: 12
+                created_by: 6
+                resolved_by: null
+                status: pending
+                answer: null
+                created_at: '2026-10-18T11:40:00.000Z'
+                resolved_at: null
+                _links:
+                  self: { href: /games/3/rounds/8/events/16 }
+                  round: { href: /games/3/rounds/8 }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Events]
+      summary: Atnaujinti įvykį (atsakyti į klausimą / pažymėti užduotį atlikta)
+      operationId: updateEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventUpdate' }
+            example:
+              status: completed
+              answer: Nuotrauka su bažnyčios bokštu
+              resolved_by: 5
+              resolved_at: '2026-10-18T12:05:00Z'
+      responses:
+        '200':
+          description: Įvykis atnaujintas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Statusas ne pending, bet resolved_at tuščias (arba atvirkščiai)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Value violates a constraint }
+    delete:
+      tags: [Events]
+      summary: Ištrinti įvykį
+      operationId: deleteEvent
+      responses:
+        '204':
+          description: Įvykis ištrintas
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    GameId:
+      name: gameId
+      in: path
+      required: true
+      description: Žaidimo ID
+      schema: { type: integer, minimum: 1 }
+    RoundId:
+      name: roundId
+      in: path
+      required: true
+      description: Raundo ID (turi priklausyti nurodytam žaidimui)
+      schema: { type: integer, minimum: 1 }
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      description: Įvykio ID (turi priklausyti nurodytam raundui)
+      schema: { type: integer, minimum: 1 }
+    Page:
+      name: page
+      in: query
+      description: Puslapio numeris
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      description: Įrašų skaičius puslapyje
+      schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+
+  responses:
+    BadRequest:
+      description: Netinkamas ID, užklausos parametras arba body
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            invalidId:
+              value: { error: Invalid game id }
+            validation:
+              value:
+                error: Validation failed
+                details:
+                  - code: too_small
+                    path: [max_players]
+                    message: Too small expected number to be >=2
+            malformedJson:
+              value: { error: Malformed JSON body }
+    NotFound:
+      description: Resursas nerastas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Game not found }
+    Unprocessable:
+      description: Nurodytas susijęs resursas neegzistuoja arba pažeista taisyklė
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Referenced resource does not exist }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        details:
+          type: array
+          items: { type: object }
+
+    Link:
+      type: object
+      properties:
+        href: { type: string }
+
+    GameStatus:
+      type: string
+      enum: [lobby, active, finished]
+
+    Game:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        created_by: { type: integer }
+        zone_id: { type: integer }
+        status: { $ref: '#/components/schemas/GameStatus' }
+        is_public: { type: boolean }
+        is_locked: { type: boolean }
+        max_players: { type: integer }
+        head_start_min: { type: integer }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        ended_at: { type: string, format: date-time, nullable: true }
+        _links:
+          type: object
+          properties:
+            self: { $ref: '#/components/schemas/Link' }
+            rounds: { $ref: '#/components/schemas/Link' }
+
+    GameDetails:
+      allOf:
+        - $ref: '#/components/schemas/Game'
+        - type: object
+          properties:
+            zone:
+              type: object
+              properties:
+                id: { type: integer }
+                name: { type: string }
+                city: { type: string }
+            creator:
+              type: object
+              properties:
+                id: { type: integer }
+                username: { type: string }
+            players:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: integer }
+                  username: { type: string }
+
+    GameList:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Game' }
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+
+    GameCreate:
+      type: object
+      required: [name, created_by, zone_id, max_players, head_start_min]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        created_by: { type: integer, minimum: 1, description: Laikinai – bus pakeista JWT naudotoju }
+        zone_id: { type: integer, minimum: 1 }
+        is_public: { type: boolean, default: false }
+        max_players: { type: integer, minimum: 2, maximum: 20 }
+        head_start_min: { type: integer, minimum: 1 }
+
+    GameUpdate:
+      type: object
+      required: [name, is_public, is_locked, max_players, head_start_min]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        is_public: { type: boolean }
+        is_locked: { type: boolean }
+        max_players: { type: integer, minimum: 2, maximum: 20 }
+        head_start_min: { type: integer, minimum: 1 }
+
+    RoundStatus:
+      type: string
+      enum: [pending, active, finished]
+
+    Round:
+      type: object
+      properties:
+        id: { type: integer }
+        game_id: { type: integer }
+        found_by: { type: integer, nullable: true }
+        round_number: { type: integer }
+        status: { $ref: '#/components/schemas/RoundStatus' }
+        started_at: { type: string, format: date-time, nullable: true, description: Head start pradžia }
+        ended_at: { type: string, format: date-time, nullable: true, description: 'Momentas, kai komanda surasta' }
+        _links:
+          type: object
+          properties:
+            self: { $ref: '#/components/schemas/Link' }
+            game: { $ref: '#/components/schemas/Link' }
+            events: { $ref: '#/components/schemas/Link' }
+
+    RoundUpdate:
+      type: object
+      required: [status, started_at, ended_at, found_by]
+      properties:
+        status: { $ref: '#/components/schemas/RoundStatus' }
+        started_at: { type: string, format: date-time, nullable: true }
+        ended_at: { type: string, format: date-time, nullable: true }
+        found_by: { type: integer, minimum: 1, nullable: true }
+
+    EventStatus:
+      type: string
+      enum: [pending, answered, completed]
+
+    Event:
+      type: object
+      properties:
+        id: { type: integer }
+        round_id: { type: integer }
+        template_id: { type: integer }
+        created_by: { type: integer }
+        resolved_by: { type: integer, nullable: true }
+        status: { $ref: '#/components/schemas/EventStatus' }
+        answer: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time, nullable: true }
+        _links:
+          type: object
+          properties:
+            self: { $ref: '#/components/schemas/Link' }
+            round: { $ref: '#/components/schemas/Link' }
+
+    EventCreate:
+      type: object
+      required: [template_id, created_by]
+      properties:
+        template_id: { type: integer, minimum: 1 }
+        created_by: { type: integer, minimum: 1, description: Laikinai – bus pakeista JWT naudotoju }
+
+    EventUpdate:
+      type: object
+      required: [status, answer, resolved_by, resolved_at]
+      properties:
+        status: { $ref: '#/components/schemas/EventStatus' }
+        answer: { type: string, minLength: 1, maxLength: 500, nullable: true }
+        resolved_by: { type: integer, minimum: 1, nullable: true }
+        resolved_at: { type: string, format: date-time, nullable: true }

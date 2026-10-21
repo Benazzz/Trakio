@@ -1,0 +1,1193 @@
+{
+  "info": {
+    "name": "Trakio API",
+    "description": "L1: visi 15 API metodų ir klaidų atvejai. Paleisti per Collection Runner. Kolekcija pati susikuria testinį žaidimą, raundą ir įvykį, o pabaigoje juos ištrina, todėl ją galima leisti kelis kartus iš eilės.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Games",
+      "item": [
+        {
+          "name": "GET /games – sąrašas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Turi data, page, limit, total\", () => { const j = pm.response.json(); pm.expect(j.data).to.be.an(\"array\"); pm.expect(j).to.have.keys(\"data\",\"page\",\"limit\",\"total\"); });",
+                  "pm.test(\"Elementai turi _links\", () => pm.expect(pm.response.json().data[0]._links.self.href).to.match(/^\\/games\\/\\d+$/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games"
+          }
+        },
+        {
+          "name": "GET /games?page=1&limit=2 – puslapiavimas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Ne daugiau 2 įrašų\", () => pm.expect(pm.response.json().data.length).to.be.at.most(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games?page=1&limit=2"
+          }
+        },
+        {
+          "name": "GET /games?status=lobby&is_public=true – filtravimas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Visi lobby ir vieši\", () => pm.response.json().data.forEach(g => { pm.expect(g.status).to.eql(\"lobby\"); pm.expect(g.is_public).to.eql(true); }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games?status=lobby&is_public=true"
+          }
+        },
+        {
+          "name": "GET /games?limit=0 – 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games?limit=0"
+          }
+        },
+        {
+          "name": "GET /games?status=paused – 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games?status=paused"
+          }
+        },
+        {
+          "name": "GET /games/1 – agreguotas resursas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Turi zone, creator, players\", () => { const j = pm.response.json(); pm.expect(j.zone).to.have.property(\"name\"); pm.expect(j.creator).to.have.property(\"username\"); pm.expect(j.players).to.be.an(\"array\").that.is.not.empty; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1"
+          }
+        },
+        {
+          "name": "GET /games/999999 – 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/999999"
+          }
+        },
+        {
+          "name": "GET /games/abc – 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/abc"
+          }
+        },
+        {
+          "name": "POST /games – 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.collectionVariables.set(\"newGameId\", pm.response.json().id);",
+                  "pm.test(\"Naujas žaidimas lobby būsenoje\", () => pm.expect(pm.response.json().status).to.eql(\"lobby\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman testinis žaidimas\",\n  \"created_by\": 2,\n  \"zone_id\": 4,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /games – blogas body 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"created_by\": 2,\n  \"zone_id\": 1,\n  \"max_players\": \"keturi\",\n  \"head_start_min\": -5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /games – zona neegzistuoja 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman testinis žaidimas\",\n  \"created_by\": 2,\n  \"zone_id\": 999999,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /games – sugadintas JSON 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"be uždarymo\"",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT /games/:id – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Pavadinimas pakeistas\", () => pm.expect(pm.response.json().name).to.eql(\"Postman žaidimas (atnaujintas)\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman žaidimas (atnaujintas)\",\n  \"is_public\": false,\n  \"is_locked\": true,\n  \"max_players\": 6,\n  \"head_start_min\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT /games/:id – trūksta laukų 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tik pavadinimas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT /games/999999 – 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/999999",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman žaidimas (atnaujintas)\",\n  \"is_public\": false,\n  \"is_locked\": true,\n  \"max_players\": 6,\n  \"head_start_min\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Rounds",
+      "item": [
+        {
+          "name": "GET /games/1/rounds – sąrašas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Visi raundai priklauso žaidimui 1\", () => pm.response.json().forEach(r => pm.expect(r.game_id).to.eql(1)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1/rounds"
+          }
+        },
+        {
+          "name": "GET /games/999999/rounds – 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/999999/rounds"
+          }
+        },
+        {
+          "name": "GET /games/1/rounds/1 – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Turi _links į game ir events\", () => { const l = pm.response.json()._links; pm.expect(l.game.href).to.eql(\"/games/1\"); pm.expect(l.events.href).to.eql(\"/games/1/rounds/1/events\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1/rounds/1"
+          }
+        },
+        {
+          "name": "GET /games/1/rounds/5 – kito žaidimo raundas 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1/rounds/5"
+          }
+        },
+        {
+          "name": "GET /games/1/rounds/abc – 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1/rounds/abc"
+          }
+        },
+        {
+          "name": "POST /games/:id/rounds – 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.collectionVariables.set(\"newRoundId\", pm.response.json().id);",
+                  "pm.test(\"Pirmas raundas = 1\", () => pm.expect(pm.response.json().round_number).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds"
+          }
+        },
+        {
+          "name": "POST /games/1/rounds – baigtas žaidimas 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/games/1/rounds"
+          }
+        },
+        {
+          "name": "PUT /games/:id/rounds/:id – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Raundas aktyvus\", () => pm.expect(pm.response.json().status).to.eql(\"active\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"started_at\": \"2026-10-20T10:00:00Z\",\n  \"ended_at\": null,\n  \"found_by\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT raundas – pabaiga prieš pradžią 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"finished\",\n  \"started_at\": \"2026-10-20T10:00:00Z\",\n  \"ended_at\": \"2026-10-20T09:00:00Z\",\n  \"found_by\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT /games/3/rounds/7 – antras aktyvus raundas 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/3/rounds/7",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"started_at\": \"2026-10-18T10:00:00Z\",\n  \"ended_at\": null,\n  \"found_by\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT raundas – blogas statusas 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"paused\",\n  \"started_at\": \"2026-10-20T10:00:00Z\",\n  \"ended_at\": null,\n  \"found_by\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Events",
+      "item": [
+        {
+          "name": "GET /games/3/rounds/8/events – hierarchinis (3 objektai)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Visi įvykiai iš raundo 8\", () => pm.response.json().forEach(e => pm.expect(e.round_id).to.eql(8)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/3/rounds/8/events"
+          }
+        },
+        {
+          "name": "GET /games/3/rounds/8/events/16 – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/3/rounds/8/events/16"
+          }
+        },
+        {
+          "name": "GET /games/1/rounds/8/events – raundas iš kito žaidimo 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1/rounds/8/events"
+          }
+        },
+        {
+          "name": "GET /games/3/rounds/8/events/1 – įvykis iš kito raundo 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/3/rounds/8/events/1"
+          }
+        },
+        {
+          "name": "POST events – 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.collectionVariables.set(\"newEventId\", pm.response.json().id);",
+                  "pm.test(\"Naujas įvykis pending\", () => pm.expect(pm.response.json().status).to.eql(\"pending\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 13,\n  \"created_by\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST events – baigtas raundas 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/1/rounds/1/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 1,\n  \"created_by\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST events – šablonas neegzistuoja 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 999999,\n  \"created_by\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST events – trūksta laukų 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"created_by\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT events/:id – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);",
+                  "pm.test(\"Įvykis completed\", () => pm.expect(pm.response.json().status).to.eql(\"completed\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\",\n  \"answer\": \"Nuotrauka prie Dainų slėnio scenos\",\n  \"resolved_by\": 3,\n  \"resolved_at\": \"2026-10-20T10:30:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT events/:id – completed be resolved_at 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\",\n  \"answer\": \"Nuotrauka prie Dainų slėnio scenos\",\n  \"resolved_by\": 3,\n  \"resolved_at\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PUT events/:id – blogas statusas 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"veto\",\n  \"answer\": \"Nuotrauka prie Dainų slėnio scenos\",\n  \"resolved_by\": 3,\n  \"resolved_at\": \"2026-10-20T10:30:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE events/:id – 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}"
+          }
+        },
+        {
+          "name": "DELETE events/:id – jau ištrintas 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Trynimas ir kita",
+      "item": [
+        {
+          "name": "DELETE /games/:id/rounds/:id – 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}"
+          }
+        },
+        {
+          "name": "DELETE /games/:id/rounds/:id – jau ištrintas 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}"
+          }
+        },
+        {
+          "name": "DELETE /games/:id – 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}"
+          }
+        },
+        {
+          "name": "DELETE /games/:id – jau ištrintas 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{newGameId}}"
+          }
+        },
+        {
+          "name": "GET /nezinomas – 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON atsakymas\", () => pm.response.to.be.json);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/nezinomas"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "newGameId",
+      "value": ""
+    },
+    {
+      "key": "newRoundId",
+      "value": ""
+    },
+    {
+      "key": "newEventId",
+      "value": ""
+    }
+  ]
+}
