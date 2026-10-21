@@ -2,6 +2,7 @@ import parseId from "../utils/parseId.js";
 import * as roundService from "../services/rounds.service.js";
 import * as gameService from "../services/games.service.js";
 import { updateRoundSchema } from "../validators/rounds.schema.js";
+import { withRoundLinks } from "../utils/links.js";
 
 export const getAllRounds = async (req, res) => {
   const gameId = parseId(req.params.gameId);
@@ -12,7 +13,7 @@ export const getAllRounds = async (req, res) => {
   if (!game) return res.status(404).json({ error: "Game not found" });
 
   const rounds = await roundService.fetchRounds(gameId);
-  res.json(rounds);
+  res.json(rounds.map(withRoundLinks));
 };
 
 export const getRound = async (req, res) => {
@@ -30,7 +31,7 @@ export const getRound = async (req, res) => {
   const round = await roundService.fetchRound(gameId, roundId);
   if (!round) return res.status(404).json({ error: "Round not found" });
 
-  res.json(round);
+  res.json(withRoundLinks(round));
 };
 
 export const createRound = async (req, res) => {
@@ -47,7 +48,7 @@ export const createRound = async (req, res) => {
       .json({ error: "Cannot add a round to a finished game" });
 
   const createdRound = await roundService.createRound(gameId);
-  res.status(201).json(createdRound);
+  res.status(201).json(withRoundLinks(createdRound));
 };
 
 export const updateRound = async (req, res) => {
@@ -74,7 +75,7 @@ export const updateRound = async (req, res) => {
     result.data,
   );
   if (!updatedRound) return res.status(404).json({ error: "Round not found" });
-  res.status(200).json(updatedRound);
+  res.status(200).json(withRoundLinks(updatedRound));
 };
 
 export const deleteRound = async (req, res) => {

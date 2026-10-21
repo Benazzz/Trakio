@@ -1,10 +1,21 @@
 import pool from "../db/pool.js";
 
-export const fetchGames = async () => {
-  const result = await pool.query("SELECT * FROM games");
-  return result.rows;
-};
+export const fetchGames = async (limit, offset, status, isPublic) => {
+  const where = `
+    WHERE ($1::game_status IS NULL OR status = $1)
+      AND ($2::boolean IS NULL OR is_public = $2)`;
 
+  const result = await pool.query(
+    `SELECT * FROM games ${where} ORDER BY id LIMIT $3 OFFSET $4`,
+    [status, isPublic, limit, offset],
+  );
+  const countResult = await pool.query(
+    `SELECT COUNT(*) FROM games ${where}`,
+    [status, isPublic],
+  );
+
+  return { items: result.rows, total: countResult.rows[0].count };
+};
 export const fetchGame = async (id) => {
   const result = await pool.query("SELECT * FROM games WHERE id = $1", [id]);
   return result.rows[0];
@@ -41,6 +52,6 @@ export const updateGame = async (id, data) => {
 };
 
 export const deleteGame = async (id) => {
-  const result = await pool.query("DELETE FROM games WHERE id = $1 ORDER BY id", [id]);
+  const result = await pool.query("DELETE FROM games WHERE id = $1", [id]);
   return result.rowCount;
 };

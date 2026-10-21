@@ -2,7 +2,11 @@ import * as eventService from "../services/events.service.js";
 import * as roundService from "../services/rounds.service.js";
 import * as gameService from "../services/games.service.js";
 import parseId from "../utils/parseId.js";
-import { createEventSchema, updateEventSchema } from "../validators/event.shema.js";
+import {
+  createEventSchema,
+  updateEventSchema,
+} from "../validators/event.shema.js";
+import { withEventLinks } from "../utils/links.js";
 
 export const getAllEvents = async (req, res) => {
   const gameId = parseId(req.params.gameId);
@@ -20,7 +24,7 @@ export const getAllEvents = async (req, res) => {
   if (!round) return res.status(404).json({ error: "Round not found" });
 
   const events = await eventService.fetchEvents(roundId);
-  res.json(events);
+  res.json(events.map((e) => withEventLinks(e, gameId)));
 };
 
 export const getEvent = async (req, res) => {
@@ -45,7 +49,7 @@ export const getEvent = async (req, res) => {
   const event = await eventService.fetchEvent(roundId, eventId);
   if (!event) return res.status(404).json({ error: "Event not found" });
 
-  res.json(event);
+  res.json(withEventLinks(event, gameId));
 };
 
 export const createEvent = async (req, res) => {
@@ -75,7 +79,7 @@ export const createEvent = async (req, res) => {
       .json({ error: "Events can only be added to an active round" });
 
   const createdEvent = await eventService.createEvent(roundId, result.data);
-  res.status(201).json(createdEvent);
+  res.status(201).json(withEventLinks(createdEvent, gameId));
 };
 
 export const updateEvent = async (req, res) => {
@@ -110,7 +114,7 @@ export const updateEvent = async (req, res) => {
   );
   if (!updatedEvent) return res.status(404).json({ error: "Event not found" });
 
-  res.json(updatedEvent);
+  res.json(withEventLinks(updatedEvent, gameId));
 };
 
 export const deleteEvent = async (req, res) => {
