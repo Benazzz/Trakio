@@ -43,7 +43,7 @@ export const getAllGames = async (req, res) => {
 export const getGame = async (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) return res.status(400).json({ error: "Invalid game id" });
-  const game = await gameService.fetchGame(id);
+  const game = await gameService.fetchGameDetails(id);
   if (!game) return res.status(404).json({ error: "Game not found" });
   res.json(withGameLinks(game));
 };

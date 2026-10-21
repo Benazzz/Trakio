@@ -9,16 +9,46 @@ export const fetchGames = async (limit, offset, status, isPublic) => {
     `SELECT * FROM games ${where} ORDER BY id LIMIT $3 OFFSET $4`,
     [status, isPublic, limit, offset],
   );
-  const countResult = await pool.query(
-    `SELECT COUNT(*) FROM games ${where}`,
-    [status, isPublic],
-  );
+  const countResult = await pool.query(`SELECT COUNT(*) FROM games ${where}`, [
+    status,
+    isPublic,
+  ]);
 
   return { items: result.rows, total: countResult.rows[0].count };
 };
 export const fetchGame = async (id) => {
   const result = await pool.query("SELECT * FROM games WHERE id = $1", [id]);
   return result.rows[0];
+};
+
+export const fetchGameDetails = async (id) => {
+  const gameResult = await pool.query(
+    `SELECT g.*, z.name AS zone_name, z.city AS zone_city, u.username AS creator_username
+     FROM games g
+     JOIN zones z ON z.id = g.zone_id
+     JOIN users u ON u.id = g.created_by
+     WHERE g.id = $1`,
+    [id],
+  );
+  const row = gameResult.rows[0];
+  if (!row) return undefined;
+
+  const playersResult = await pool.query(
+    `SELECT u.id, u.username
+     FROM game_players gp
+     JOIN users u ON u.id = gp.user_id
+     WHERE gp.game_id = $1
+     ORDER BY gp.joined_at`,
+    [id],
+  );
+
+  const { zone_name, zone_city, creator_username, ...game } = row;
+  return {
+    ...game,
+    zone: { id: game.zone_id, name: zone_name, city: zone_city },
+    creator: { id: game.created_by, username: creator_username },
+    players: playersResult.rows,
+  };
 };
 
 export const createGame = async (data) => {
