@@ -5,6 +5,7 @@ import {
   createGameSchema,
   updateGameSchema,
 } from "../validators/game.schema.js";
+import canModify from "../utils/canModify.js";
 
 const GAME_STATUSES = ["lobby", "active", "finished"];
 
@@ -67,16 +68,25 @@ export const updateGame = async (req, res) => {
     return res
       .status(400)
       .json({ error: "Validation failed", details: result.error.issues });
+
+  const game = await gameService.fetchGame(id);
+  if (!game) return res.status(404).json({ error: "Game not found" });
+  if (!canModify(req.user, game.created_by))
+    return res.status(403).json({ error: "You can only modify your own games" });
+
   const updatedGame = await gameService.updateGame(id, result.data);
-  if (!updatedGame) return res.status(404).json({ error: "Game not found" });
   res.status(200).json(withGameLinks(updatedGame));
 };
 
 export const deleteGame = async (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) return res.status(400).json({ error: "Invalid game id" });
-  const deletedCount = await gameService.deleteGame(id);
-  if (deletedCount === 0)
-    return res.status(404).json({ error: "Game not found" });
+
+  const game = await gameService.fetchGame(id);
+  if (!game) return res.status(404).json({ error: "Game not found" });
+  if (!canModify(req.user, game.created_by))
+    return res.status(403).json({ error: "You can only delete your own games" });
+
+  await gameService.deleteGame(id);
   res.status(204).end();
 };

@@ -3,6 +3,7 @@ import * as roundService from "../services/rounds.service.js";
 import * as gameService from "../services/games.service.js";
 import { updateRoundSchema } from "../validators/round.schema.js";
 import { withRoundLinks } from "../utils/links.js";
+import canModify from "../utils/canModify.js";
 
 export const getAllRounds = async (req, res) => {
   const gameId = parseId(req.params.gameId);
@@ -41,6 +42,8 @@ export const createRound = async (req, res) => {
 
   const game = await gameService.fetchGame(gameId);
   if (!game) return res.status(404).json({ error: "Game not found" });
+  if (!canModify(req.user, game.created_by))
+    return res.status(403).json({ error: "Only the game creator can manage rounds" });
 
   if (game.status === "finished")
     return res
@@ -68,6 +71,8 @@ export const updateRound = async (req, res) => {
 
   const game = await gameService.fetchGame(gameId);
   if (!game) return res.status(404).json({ error: "Game not found" });
+  if (!canModify(req.user, game.created_by))
+    return res.status(403).json({ error: "Only the game creator can manage rounds" });
 
   const updatedRound = await roundService.updateRound(
     gameId,

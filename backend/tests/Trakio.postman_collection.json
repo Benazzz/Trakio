@@ -1,10 +1,669 @@
 {
   "info": {
     "name": "Trakio API",
-    "description": "L1: visi 15 API metodų ir klaidų atvejai. Paleisti per Collection Runner. Kolekcija pati susikuria testinį žaidimą, raundą ir įvykį, o pabaigoje juos ištrina, todėl ją galima leisti kelis kartus iš eilės.",
+    "description": "L1 + L2. Paleisti per Collection Runner nuo pradžių iki galo. 0 aplankas prisijungia kaip Tomas (player), Ieva (player) ir admin ir išsaugo token'us; pagal nutylėjimą užklausos siunčiamos su Tomo token'u (kolekcijos Authorization). Testiniai žaidimai, raundai ir įvykiai sukuriami ir ištrinami, todėl kolekciją galima leisti kelis kartus iš eilės.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
+    {
+      "name": "0. Autentifikacija (L2)",
+      "item": [
+        {
+          "name": "Login Tomas (player) – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Grąžina accessToken ir refreshToken\", () => { pm.expect(j.accessToken).to.be.a(\"string\"); pm.expect(j.refreshToken).to.have.lengthOf(64); });",
+                  "pm.collectionVariables.set(\"tomasAccess\", j.accessToken);",
+                  "pm.collectionVariables.set(\"refreshA\", j.refreshToken);",
+                  "pm.test(\"Token'e yra sub ir role\", () => { const p = JSON.parse(atob(j.accessToken.split(\".\")[1].replace(/-/g,\"+\").replace(/_/g,\"/\"))); pm.expect(p.sub).to.eql(\"2\"); pm.expect(p.role).to.eql(\"player\"); pm.expect(p.exp - p.iat).to.eql(900); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tomas@trakio.lt\",\n  \"password\": \"Trakio123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login Ieva (player) – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Grąžina accessToken ir refreshToken\", () => { pm.expect(j.accessToken).to.be.a(\"string\"); pm.expect(j.refreshToken).to.have.lengthOf(64); });",
+                  "pm.collectionVariables.set(\"ievaAccess\", j.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ieva@trakio.lt\",\n  \"password\": \"Trakio123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login Admin – 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Grąžina accessToken ir refreshToken\", () => { pm.expect(j.accessToken).to.be.a(\"string\"); pm.expect(j.refreshToken).to.have.lengthOf(64); });",
+                  "pm.collectionVariables.set(\"adminAccess\", j.accessToken);",
+                  "pm.test(\"Token'e role = admin\", () => { const p = JSON.parse(atob(j.accessToken.split(\".\")[1].replace(/-/g,\"+\").replace(/_/g,\"/\"))); pm.expect(p.role).to.eql(\"admin\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@trakio.lt\",\n  \"password\": \"Trakio123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register – 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Nėra password_hash\", () => pm.expect(j).to.not.have.property(\"password_hash\"));",
+                  "pm.test(\"Rolė player\", () => pm.expect(j.role).to.eql(\"player\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postman{{$timestamp}}@trakio.lt\",\n  \"username\": \"postman_{{$timestamp}}\",\n  \"password\": \"Slaptas123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register – bandymas tapti admin, gauna player",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"role ignoruojama – player\", () => pm.expect(pm.response.json().role).to.eql(\"player\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hacker{{$timestamp}}@trakio.lt\",\n  \"username\": \"hacker_{{$timestamp}}\",\n  \"password\": \"Slaptas123\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register – užimtas el. paštas 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"  TOMAS@Trakio.LT \",\n  \"username\": \"kitas_{{$timestamp}}\",\n  \"password\": \"Slaptas123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register – blogas el. paštas 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"abc\",\n  \"username\": \"testas\",\n  \"password\": \"Slaptas123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Register – per trumpas slaptažodis 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"t1@trakio.lt\",\n  \"username\": \"testas\",\n  \"password\": \"trumpas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login – blogas slaptažodis 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Bendras pranešimas\", () => pm.expect(pm.response.json().error).to.eql(\"Invalid email or password\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tomas@trakio.lt\",\n  \"password\": \"blogas123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login – neegzistuojantis naudotojas 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Tas pats pranešimas kaip blogo slaptažodžio\", () => pm.expect(pm.response.json().error).to.eql(\"Invalid email or password\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nera@trakio.lt\",\n  \"password\": \"Trakio123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login – užblokuotas naudotojas 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"domas@trakio.lt\",\n  \"password\": \"Trakio123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login – ištrintas naudotojas 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"paulius@trakio.lt\",\n  \"password\": \"Trakio123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login – tuščias body 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Refresh – 200 (nauja pora)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Naujas refreshToken skiriasi nuo seno\", () => pm.expect(j.refreshToken).to.not.eql(pm.collectionVariables.get(\"refreshA\")));",
+                  "pm.collectionVariables.set(\"refreshB\", j.refreshToken);",
+                  "pm.collectionVariables.set(\"tomasAccess\", j.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshA}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Refresh – tas pats senas token'as 401 (rotation)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshA}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Refresh – neegzistuojantis token'as 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Refresh – tuščias body 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Logout – 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Tuščias atsakymas\", () => pm.expect(pm.response.text()).to.eql(\"\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshB}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Logout – jau atsijungęs 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshB}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Refresh – po logout 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshB}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "1. Games",
       "item": [
@@ -200,7 +859,7 @@
             "url": "{{baseUrl}}/games",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman testinis žaidimas\",\n  \"created_by\": 2,\n  \"zone_id\": 4,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
+              "raw": "{\n  \"name\": \"Postman testinis žaidimas\",\n  \"zone_id\": 4,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -234,7 +893,7 @@
             "url": "{{baseUrl}}/games",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"\",\n  \"created_by\": 2,\n  \"zone_id\": 1,\n  \"max_players\": \"keturi\",\n  \"head_start_min\": -5\n}",
+              "raw": "{\n  \"name\": \"\",\n  \"zone_id\": 1,\n  \"max_players\": \"keturi\",\n  \"head_start_min\": -5\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -268,7 +927,7 @@
             "url": "{{baseUrl}}/games",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman testinis žaidimas\",\n  \"created_by\": 2,\n  \"zone_id\": 999999,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
+              "raw": "{\n  \"name\": \"Postman testinis žaidimas\",\n  \"zone_id\": 999999,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -663,6 +1322,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
             }
           }
         },
@@ -813,7 +1482,7 @@
             "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"template_id\": 13,\n  \"created_by\": 2\n}",
+              "raw": "{\n  \"template_id\": 13\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -847,7 +1516,7 @@
             "url": "{{baseUrl}}/games/1/rounds/1/events",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"template_id\": 1,\n  \"created_by\": 2\n}",
+              "raw": "{\n  \"template_id\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -881,7 +1550,7 @@
             "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"template_id\": 999999,\n  \"created_by\": 2\n}",
+              "raw": "{\n  \"template_id\": 999999\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -915,7 +1584,7 @@
             "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"created_by\": 2\n}",
+              "raw": "{}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1043,7 +1712,17 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}"
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
           }
         },
         {
@@ -1063,7 +1742,17 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}"
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}/events/{{newEventId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
           }
         }
       ]
@@ -1087,7 +1776,17 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}"
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
           }
         },
         {
@@ -1107,7 +1806,17 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}"
+            "url": "{{baseUrl}}/games/{{newGameId}}/rounds/{{newRoundId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
           }
         },
         {
@@ -1170,6 +1879,717 @@
           }
         }
       ]
+    },
+    {
+      "name": "5. Autorizacija pagal rolę ir ID (L2)",
+      "item": [
+        {
+          "name": "GET /games – viešas, be token'o 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /games/1 – be token'o 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /games/1 – netinkamas token'as 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"badToken\", \"abc\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{badToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /games/1 – suklastotas token'as (role → admin) 401",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const [h, p, s] = pm.collectionVariables.get(\"tomasAccess\").split(\".\");",
+                  "const payload = JSON.parse(atob(p.replace(/-/g,\"+\").replace(/_/g,\"/\")));",
+                  "payload.role = \"admin\";",
+                  "const forged = btoa(JSON.stringify(payload)).replace(/\\+/g,\"-\").replace(/\\//g,\"_\").replace(/=+$/,\"\");",
+                  "pm.collectionVariables.set(\"forgedToken\", [h, forged, s].join(\".\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{forgedToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /games/1 – tikras token'as 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/games/1",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /games – created_by iš token'o, ne iš body 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"created_by = Tomas (2), ne 5\", () => pm.expect(j.created_by).to.eql(2));",
+                  "pm.collectionVariables.set(\"l2GameId\", j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/games",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"L2 autorizacijos žaidimas\",\n  \"created_by\": 5,\n  \"zone_id\": 1,\n  \"is_public\": true,\n  \"max_players\": 4,\n  \"head_start_min\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /games/:id – svetimas žaidimas 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"L2 žaidimas (atnaujintas)\",\n  \"is_public\": true,\n  \"is_locked\": false,\n  \"max_players\": 6,\n  \"head_start_min\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /games/:id – admin gali 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"L2 žaidimas (atnaujintas)\",\n  \"is_public\": true,\n  \"is_locked\": false,\n  \"max_players\": 6,\n  \"head_start_min\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST rounds – ne žaidimo kūrėjas 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST rounds – žaidimo kūrėjas 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"l2RoundId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT rounds/:id – ne žaidimo kūrėjas 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"started_at\": \"2026-11-03T10:00:00Z\",\n  \"ended_at\": null,\n  \"found_by\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT rounds/:id – žaidimo kūrėjas 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"started_at\": \"2026-11-03T10:00:00Z\",\n  \"ended_at\": null,\n  \"found_by\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST events – Ieva sukuria įvykį 201",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"created_by = Ieva (3)\", () => pm.expect(j.created_by).to.eql(3));",
+                  "pm.collectionVariables.set(\"l2EventId\", j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"template_id\": 1,\n  \"created_by\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT events/:id – svetimas įvykis 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}/events/{{l2EventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"answered\",\n  \"answer\": \"Taip\",\n  \"resolved_by\": 2,\n  \"resolved_at\": \"2026-11-03T10:05:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT events/:id – įvykio kūrėjas 200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}/events/{{l2EventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"answered\",\n  \"answer\": \"Taip\",\n  \"resolved_by\": 2,\n  \"resolved_at\": \"2026-11-03T10:05:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE events/:id – player (ir kūrėjas) 403, tik admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}/events/{{l2EventId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE rounds/:id – player (ir žaidimo kūrėjas) 403, tik admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE events/:id – admin 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}/events/{{l2EventId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE rounds/:id – admin 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}/rounds/{{l2RoundId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /games/:id – svetimas žaidimas 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"Turi error lauką\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ievaAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /games/:id – kūrėjas 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/games/{{l2GameId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tomasAccess}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [
@@ -1188,6 +2608,56 @@
     {
       "key": "newEventId",
       "value": ""
+    },
+    {
+      "key": "tomasAccess",
+      "value": ""
+    },
+    {
+      "key": "ievaAccess",
+      "value": ""
+    },
+    {
+      "key": "adminAccess",
+      "value": ""
+    },
+    {
+      "key": "refreshA",
+      "value": ""
+    },
+    {
+      "key": "refreshB",
+      "value": ""
+    },
+    {
+      "key": "badToken",
+      "value": ""
+    },
+    {
+      "key": "forgedToken",
+      "value": ""
+    },
+    {
+      "key": "l2GameId",
+      "value": ""
+    },
+    {
+      "key": "l2RoundId",
+      "value": ""
+    },
+    {
+      "key": "l2EventId",
+      "value": ""
     }
-  ]
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{tomasAccess}}",
+        "type": "string"
+      }
+    ]
+  }
 }

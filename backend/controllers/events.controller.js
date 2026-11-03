@@ -7,6 +7,7 @@ import {
   updateEventSchema,
 } from "../validators/event.shema.js";
 import { withEventLinks } from "../utils/links.js";
+import canModify from "../utils/canModify.js";
 
 export const getAllEvents = async (req, res) => {
   const gameId = parseId(req.params.gameId);
@@ -108,16 +109,18 @@ export const updateEvent = async (req, res) => {
   const round = await roundService.fetchRound(gameId, roundId);
   if (!round) return res.status(404).json({ error: "Round not found" });
 
+  const event = await eventService.fetchEvent(roundId, eventId);
+  if (!event) return res.status(404).json({ error: "Event not found" });
+  if (!canModify(req.user, event.created_by))
+    return res.status(403).json({ error: "You can only modify your own events" });
+
   const updatedEvent = await eventService.updateEvent(
     roundId,
     eventId,
     result.data,
   );
-  if (!updatedEvent) return res.status(404).json({ error: "Event not found" });
-
   res.json(withEventLinks(updatedEvent, gameId));
 };
-
 export const deleteEvent = async (req, res) => {
   const gameId = parseId(req.params.gameId);
   if (gameId === null)
