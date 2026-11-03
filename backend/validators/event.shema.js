@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const createEventSchema = z.object({
   template_id: z.int().positive(),
-  created_by: z.int().positive(),
 });
 
 export const updateEventSchema = z.object({

@@ -1,7 +1,7 @@
 import parseId from "../utils/parseId.js";
 import * as roundService from "../services/rounds.service.js";
 import * as gameService from "../services/games.service.js";
-import { updateRoundSchema } from "../validators/rounds.schema.js";
+import { updateRoundSchema } from "../validators/round.schema.js";
 import { withRoundLinks } from "../utils/links.js";
 
 export const getAllRounds = async (req, res) => {

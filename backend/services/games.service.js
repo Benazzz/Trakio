@@ -51,12 +51,12 @@ export const fetchGameDetails = async (id) => {
   };
 };
 
-export const createGame = async (data) => {
+export const createGame = async (data, createdBy) => {
   const result = await pool.query(
     "INSERT INTO games (name, created_by, zone_id, is_public, max_players, head_start_min) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
     [
       data.name,
-      data.created_by,
+      createdBy,
       data.zone_id,
       data.is_public,
       data.max_players,

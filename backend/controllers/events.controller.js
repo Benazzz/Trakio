@@ -78,7 +78,8 @@ export const createEvent = async (req, res) => {
       .status(422)
       .json({ error: "Events can only be added to an active round" });
 
-  const createdEvent = await eventService.createEvent(roundId, result.data);
+  const createdBy = req.user.id;
+  const createdEvent = await eventService.createEvent(roundId, result.data, createdBy);
   res.status(201).json(withEventLinks(createdEvent, gameId));
 };
 

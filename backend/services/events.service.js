@@ -16,10 +16,10 @@ export const fetchEvent = async (roundId, eventId) => {
   return result.rows[0];
 };
 
-export const createEvent = async (roundId, data) => {
+export const createEvent = async (roundId, data, createdBy) => {
   const result = await pool.query(
     "INSERT INTO events (round_id, template_id, created_by) VALUES ($1, $2, $3) RETURNING *",
-    [roundId, data.template_id, data.created_by],
+    [roundId, data.template_id, createdBy],
   );
   return result.rows[0];
 };

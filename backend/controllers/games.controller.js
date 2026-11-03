@@ -54,7 +54,8 @@ export const createGame = async (req, res) => {
     return res
       .status(400)
       .json({ error: "Validation failed", details: result.error.issues });
-  const createdGame = await gameService.createGame(result.data);
+  const createdBy = req.user.id;
+  const createdGame = await gameService.createGame(result.data, createdBy);
   res.status(201).json(withGameLinks(createdGame));
 };
 

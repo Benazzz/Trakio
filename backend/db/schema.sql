@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS rounds CASCADE;
 DROP TABLE IF EXISTS round_hiders CASCADE;
 DROP TABLE IF EXISTS event_templates CASCADE;
 DROP TABLE IF EXISTS events CASCADE;
+DROP TABLE IF EXISTS refresh_tokens CASCADE;
 DROP TYPE IF EXISTS user_role;
 DROP TYPE IF EXISTS game_status;
 DROP TYPE IF EXISTS round_status;
@@ -111,6 +112,17 @@ CREATE TABLE events (
     CHECK ((status = 'pending') = (resolved_at IS NULL))
 );
 
+CREATE TABLE refresh_tokens (
+    id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id    bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash text NOT NULL UNIQUE,
+    expires_at timestamptz NOT NULL,
+    revoked_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX refresh_tokens_user_id_idx ON refresh_tokens (user_id);
+
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE zones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
@@ -119,3 +131,4 @@ ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE round_hiders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE refresh_tokens ENABLE ROW LEVEL SECURITY;
