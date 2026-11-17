@@ -4,3 +4,8 @@ export const getGames = async (params) => {
     const res = await axiosClient.get("/games", {params});
     return res.data;
 };
+
+export const getGame = async (id) => {
+    const res = await axiosClient.get(`/games/${id}`);
+    return res.data;
+};

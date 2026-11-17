@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 import Layout from "./components/Layout";
+import RequireAuth from "./components/RequireAuth";
 import GamesPage from "./pages/GamesPage";
 import GamePage from "./pages/GamePage";
 import RoundPage from "./pages/RoundPage";
@@ -15,8 +16,12 @@ function App() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="games" element={<GamesPage />} />
-        <Route path="games/:gameId" element={<GamePage />} />
-        <Route path="games/:gameId/rounds/:roundId" element={<RoundPage />} />
+
+        <Route element={<RequireAuth />}>
+          <Route path="games/:gameId" element={<GamePage />} />
+          <Route path="games/:gameId/rounds/:roundId" element={<RoundPage />} />
+        </Route>
+
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
