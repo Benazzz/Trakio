@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 
 export default function LoginPage() {
   const [userInput, setUserInput] = useState({ email: "", password: "" });
@@ -9,6 +10,7 @@ export default function LoginPage() {
 
   const navigate = useNavigate();
   const { login } = useAuth();
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,6 +18,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(userInput.email, userInput.password);
+      toast.success("Logged in");
       navigate("/games");
     } catch (err) {
       setError(err.response?.data?.error ?? "Failed to login");
@@ -29,32 +32,59 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      {error && <p>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={userInput.email}
-          onChange={handleChange}
-          required
-        />
-        <label htmlFor="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={userInput.password}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Logging in..." : "Log in"}
-        </button>
-      </form>
-      <Link to="/register">Don’t have an account? Register here</Link>
-    </>
+    <section className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1>Log in</h1>
+          <p>Welcome back to Trakio</p>
+        </div>
+
+        {error && (
+          <p className="alert alert-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        <form className="form" onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label htmlFor="email">Email</label>
+            <input
+              className="input"
+              type="email"
+              id="email"
+              name="email"
+              autoComplete="email"
+              value={userInput.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="password">Password</label>
+            <input
+              className="input"
+              type="password"
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              value={userInput.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
+            disabled={submitting}
+          >
+            {submitting ? "Logging in..." : "Log in"}
+          </button>
+        </form>
+
+        <p className="auth-switch">
+          Don’t have an account? <Link to="/register">Register here</Link>
+        </p>
+      </div>
+    </section>
   );
 }

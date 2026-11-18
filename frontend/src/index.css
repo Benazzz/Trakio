@@ -1,0 +1,1152 @@
+/* =========================================================
+   Trakio – global styles
+   1. Design tokens (spalvos, šriftas, tarpai)
+   2. Bazė
+   3. Layout (header / main / footer)
+   4. Komponentai (mygtukai, formos, kortelės, badge, lentelės, modalas, toast)
+   5. Puslapiai (sąrašas, detalės, auth)
+   6. Animacijos (@keyframes)
+   7. Responsive (breakpoint'ai)
+   ========================================================= */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  /* Šriftas įtraukiamas index.html per Google Fonts <link> */
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --c-bg: #f4f7f5;
+  --c-surface: #ffffff;
+  --c-text: #17211c;
+  --c-muted: #56635d;
+  --c-border: #d9e2dd;
+  --c-input-border: #b3c2ba;
+
+  --c-primary: #1f6f50;
+  --c-primary-hover: #17573e;
+  --c-primary-soft: #e3f1ea;
+  --c-accent: #f2a541;
+
+  --c-danger: #b42318;
+  --c-danger-hover: #912018;
+  --c-danger-soft: #fdecea;
+
+  --c-header: #12291f;
+  --c-header-text: #e8f2ec;
+  --c-footer: #e4ebe7;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 2px rgba(18, 41, 31, 0.06);
+  --shadow-md: 0 8px 24px rgba(18, 41, 31, 0.12);
+
+  --container: 1200px;
+  --header-h: 68px;
+}
+
+/* ---------- 2. Bazė ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--c-text);
+  background: var(--c-bg);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Paveikslėliai niekada neišlipa iš savo konteinerio */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: var(--c-primary);
+}
+
+a:hover {
+  color: var(--c-primary-hover);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- 3. Layout ---------- */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-main {
+  flex: 1;
+  padding: 32px 0 48px;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fade-in 0.3s ease both;
+}
+
+/* Header – tamsus fonas, „pill" tipo nuorodos */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--c-header);
+  color: var(--c-header-text);
+  box-shadow: 0 2px 0 var(--c-accent);
+}
+
+.header-inner {
+  position: relative;
+  max-width: var(--container);
+  height: var(--header-h);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.brand:hover {
+  color: #fff;
+}
+
+.brand svg {
+  color: var(--c-accent);
+  transition: transform 0.3s ease;
+}
+
+.brand:hover svg {
+  transform: translateY(-3px);
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--c-header-text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.nav-link.active {
+  background: var(--c-accent);
+  color: var(--c-header);
+}
+
+.nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #b9cfc3;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.menu-toggle {
+  display: none;
+}
+
+/* Footer – šviesus fonas, tylios nuorodos */
+.site-footer {
+  background: var(--c-footer);
+  border-top: 1px solid var(--c-border);
+  color: var(--c-muted);
+  font-size: 0.875rem;
+}
+
+.footer-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-muted);
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: var(--c-text);
+  text-decoration: underline;
+}
+
+/* ---------- 4. Komponentai ---------- */
+
+/* Mygtukai */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--c-primary-hover);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+
+.btn-danger {
+  background: var(--c-danger);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--c-danger-hover);
+  color: #fff;
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--c-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.icon-button:hover {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Formos */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field > label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--c-input-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--c-text);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-soft);
+}
+
+textarea.input {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--c-muted);
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--c-primary);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* Pranešimai formose / puslapiuose */
+.alert {
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.alert-error {
+  background: var(--c-danger-soft);
+  border-color: #f5c2bd;
+  color: var(--c-danger);
+}
+
+/* Badge (statusai) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef1ef;
+  color: #45524b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.badge-lobby {
+  background: #e5eefb;
+  color: #1d4f91;
+}
+
+.badge-active,
+.badge-answered,
+.badge-completed {
+  background: var(--c-primary-soft);
+  color: var(--c-primary);
+}
+
+.badge-active::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.badge-pending {
+  background: #fdf1dc;
+  color: #7a4a00;
+}
+
+.badge-finished {
+  background: #eceff1;
+  color: #4a5560;
+}
+
+/* Lentelė (raundams) */
+.table-wrap {
+  overflow-x: auto;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.table th,
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--c-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  background: #f0f4f2;
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: #f7faf8;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Sąrašas (įvykiams) */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+}
+
+.list-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-primary-soft);
+  color: var(--c-primary);
+}
+
+/* Krovimas, tušti langai */
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--c-border);
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.empty {
+  padding: 24px;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  color: var(--c-muted);
+  text-align: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 64px 16px;
+  text-align: center;
+  animation: fade-in 0.3s ease both;
+}
+
+.empty-state svg {
+  color: var(--c-primary);
+}
+
+.empty-state p {
+  color: var(--c-muted);
+}
+
+/* Modalas */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 24, 18, 0.55);
+  animation: fade-in 0.2s ease both;
+}
+
+.modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+  animation: modal-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px 18px 24px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.modal-header h2 {
+  font-size: 1.2rem;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.confirm-body p {
+  color: var(--c-muted);
+}
+
+/* Toast pranešimai */
+.toast-stack {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 40px));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--c-header);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: toast-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.toast-success .toast-icon {
+  color: #7dd3a8;
+}
+
+.toast-error {
+  background: #7a1c14;
+}
+
+.toast-error .toast-icon {
+  color: #ffb4a8;
+}
+
+.toast .icon-button {
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  color: inherit;
+}
+
+.toast .icon-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* ---------- 5. Puslapiai ---------- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  margin-top: 4px;
+  color: var(--c-muted);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-header h2 {
+  font-size: 1.35rem;
+}
+
+/* Žaidimų kortelės */
+.card-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.card-grid > li {
+  /* kortelės atsiranda viena po kitos, kai grįžta duomenys */
+  animation: rise-in 0.4s ease both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  color: inherit;
+}
+
+.game-card-img {
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.game-card:hover .game-card-img {
+  transform: scale(1.03);
+}
+
+.game-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px 18px;
+}
+
+.game-card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.game-card-title h2 {
+  font-size: 1.1rem;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-muted);
+  font-size: 0.9rem;
+}
+
+/* Žaidimo detalės */
+.detail-card {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  overflow: hidden;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.detail-img {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  object-fit: cover;
+}
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+}
+
+.detail-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.detail-title h1 {
+  font-size: 1.75rem;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin: 0;
+}
+
+.info-grid dt,
+.section-label {
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.info-grid dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.section-label {
+  margin-bottom: 8px;
+}
+
+.chip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 6px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-bg);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Prisijungimas / registracija */
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+  animation: fade-in 0.3s ease both;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 32px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+
+.auth-header h1 {
+  font-size: 1.75rem;
+}
+
+.auth-header p {
+  margin-top: 4px;
+  color: var(--c-muted);
+}
+
+.auth-switch {
+  color: var(--c-muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* ---------- 6. Animacijos ---------- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Naudotojams, kurie sistemoje išjungę animacijas */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- 7. Responsive ---------- */
+
+/* Planšetė: 2 kortelių stulpeliai */
+@media (max-width: 1023px) {
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Pagrindinis breakpoint'as: 768px (mobilus) */
+@media (max-width: 767px) {
+  .header-inner {
+    padding: 0 16px;
+  }
+
+  .menu-toggle {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: var(--radius-sm);
+    background: none;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* Meniu nusileidžia po header'iu */
+  .main-nav {
+    position: absolute;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 12px 16px 16px;
+    background: var(--c-header);
+    border-bottom: 2px solid var(--c-accent);
+    box-shadow: var(--shadow-md);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease,
+      visibility 0.2s;
+  }
+
+  .main-nav.open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .nav-link {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+  }
+
+  .site-main {
+    padding: 20px 0 32px;
+  }
+
+  .container {
+    padding: 0 16px;
+  }
+
+  .page-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .card-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .detail-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detail-img {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .detail-body {
+    padding: 20px;
+  }
+
+  .info-grid,
+  .form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .list-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .list-item .actions {
+    grid-column: 1 / -1;
+  }
+
+  .auth-card {
+    padding: 24px;
+  }
+
+  .footer-inner {
+    justify-content: center;
+    text-align: center;
+  }
+}

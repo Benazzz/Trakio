@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="400" height="240">
+  <rect width="400" height="240" fill="#dcebe2"/>
+  <g fill="#bcdcc6">
+    <ellipse cx="78" cy="58" rx="54" ry="32"/>
+    <ellipse cx="330" cy="62" rx="44" ry="28"/>
+    <ellipse cx="300" cy="200" rx="36" ry="18"/>
+  </g>
+  <path d="M0 168 C80 140 120 198 200 170 S320 122 400 150 V194 C320 170 282 226 200 212 S80 182 0 212 Z" fill="#9fc8de"/>
+  <g fill="none" stroke="#ffffff" stroke-linecap="round">
+    <path d="M0 102 H400" stroke-width="7"/>
+    <path d="M150 0 V240" stroke-width="7"/>
+    <path d="M262 0 L300 240" stroke-width="7"/>
+    <path d="M0 28 L150 102" stroke-width="5"/>
+    <path d="M0 132 H400" stroke-width="3" opacity="0.85"/>
+    <path d="M62 0 V240" stroke-width="3" opacity="0.85"/>
+    <path d="M212 0 V102" stroke-width="3" opacity="0.85"/>
+    <path d="M346 102 V240" stroke-width="3" opacity="0.85"/>
+  </g>
+  <path d="M72 202 Q140 126 230 106" fill="none" stroke="#1f6f50" stroke-width="3" stroke-dasharray="7 7" stroke-linecap="round"/>
+  <circle cx="72" cy="202" r="8" fill="#1f6f50" stroke="#ffffff" stroke-width="3"/>
+  <g transform="translate(230 54)">
+    <path d="M0 0 C-15 0 -23 10 -23 22 C-23 37 0 52 0 52 C0 52 23 37 23 22 C23 10 15 0 0 0 Z" fill="#f2a541" stroke="#12291f" stroke-width="2.5"/>
+    <circle cx="0" cy="22" r="7.5" fill="#12291f"/>
+  </g>
+</svg>

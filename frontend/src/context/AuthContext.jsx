@@ -48,7 +48,13 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      {initializing ? <p>Loading...</p> : children}
+      {initializing ? (
+        <div className="app-loading" role="status" aria-label="Loading">
+          <span className="spinner" aria-hidden="true" />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }
