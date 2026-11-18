@@ -966,6 +966,151 @@ textarea.input {
   text-align: center;
 }
 
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+}
+
+.filter-bar .form-field {
+  min-width: 200px;
+}
+
+.filter-bar .checkbox {
+  min-height: 44px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.table-actions {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--c-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.breadcrumbs a {
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+.panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 24px 28px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-title h1 {
+  font-size: 1.75rem;
+}
+
+.inline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0;
+}
+
+.inline-meta dt {
+  color: var(--c-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inline-meta dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.list-item {
+  animation: rise-in 0.35s ease both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+  transition: background-color 0.15s ease;
+}
+
+.list-item:hover {
+  background: #f7faf8;
+}
+
+.list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.list-title {
+  font-size: 1rem;
+}
+
+.list-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--c-muted);
+  font-size: 0.875rem;
+}
+
+.answer {
+  color: var(--c-text);
+  font-style: italic;
+}
+
+
 /* ---------- 6. Animacijos ---------- */
 @keyframes fade-in {
   from {
