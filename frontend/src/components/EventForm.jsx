@@ -1,11 +1,5 @@
 import { useState } from "react";
 
-/*
-  Įvykio forma.
-  - Kuriant (event nepaduotas): pasirenkamas šablonas (klausimas / užduotis).
-  - Redaguojant: statusas, atsakymas ir kas išsprendė.
-  Props: event (tik redaguojant), templates, players, onSubmit, onCancel.
-*/
 export default function EventForm({
   event,
   templates,
