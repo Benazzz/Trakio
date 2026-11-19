@@ -1,0 +1,1163 @@
+openapi: 3.0.3
+info:
+  title: Trakio API
+  version: 2.0.0
+  description: |
+    REST API miesto slėpynių žaidimų sistemai „Trakio“.
+
+    **Hierarchija:** Game → Round → Event. Raundai pasiekiami tik per žaidimą
+    (`/games/{gameId}/rounds`), įvykiai – tik per raundą
+    (`/games/{gameId}/rounds/{roundId}/events`).
+
+    **Formatas:** visi užklausų ir atsakymų kūnai – `application/json`.
+    Klaidos grąžinamos formatu `{ "error": "..." }`; validacijos klaidos papildomai
+    turi `details` masyvą.
+
+    **Autentifikacija:** JWT. Prisijungus gaunamas trumpalaikis prieigos žetonas
+    (`accessToken`, galioja 15 min.) ir ilgalaikis atnaujinimo žetonas
+    (`refreshToken`, galioja 7 d.). Prieigos žetonas siunčiamas antraštėje
+    `Authorization: Bearer <accessToken>`. Žetone saugomas naudotojo ID (`sub`) ir
+    rolė (`role`). Atnaujinant žetonus, senas atnaujinimo žetonas atšaukiamas
+    (rotacija).
+
+    **Rolės:** svečias (neprisijungęs), `player`, `admin`.
+servers:
+  - url: https://trakio-we64.onrender.com
+    description: Produkcinė aplinka (Render)
+  - url: http://localhost:3000
+    description: Lokali aplinka
+
+tags:
+  - name: Auth
+    description: Registracija, prisijungimas, žetonų atnaujinimas, atsijungimas
+  - name: Games
+    description: Žaidimai
+  - name: Rounds
+    description: Žaidimo raundai
+  - name: Events
+    description: Raundo įvykiai – klausimai ir užduotys
+  - name: Reference
+    description: Žinynai – zonos ir įvykių šablonai
+
+paths:
+  # ---------------------------------------------------------------- Auth
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registruoti naują naudotoją
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+            example:
+              email: jonas@trakio.lt
+              username: jonas_v
+              password: Slaptazodis123
+      responses:
+        '201':
+          description: Naudotojas sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+              example:
+                id: 10
+                email: jonas@trakio.lt
+                username: jonas_v
+                role: player
+                is_blocked: false
+                avatar_url: null
+                created_at: '2026-11-19T17:40:12.481Z'
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: El. paštas arba naudotojo vardas jau užimtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Email or username is already taken }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Prisijungti
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+            example:
+              email: tomas@trakio.lt
+              password: Trakio123!
+      responses:
+        '200':
+          description: Prisijungta, grąžinami žetonai
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+              example:
+                accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc5NTEwOTYwMCwiZXhwIjoxNzk1MTEwNTAwfQ.4dQ0sKk8vYV2m9c1oH1JmW3Kc6u7Qx0pT2bY5nE8rZs
+                refreshToken: 3f9c2a7e1b4d8f60a5c9e2d7b1f3a8c4e6d0b2a9f7c5e3d1b8a6f4c2e0d9b7a5
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: Neteisingas el. paštas arba slaptažodis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Invalid email or password }
+        '403':
+          description: Naudotojas užblokuotas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: User is blocked }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Atnaujinti žetonus
+      description: |
+        Pateiktas atnaujinimo žetonas atšaukiamas ir išduodama nauja žetonų pora.
+      operationId: refresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+            example:
+              refreshToken: 3f9c2a7e1b4d8f60a5c9e2d7b1f3a8c4e6d0b2a9f7c5e3d1b8a6f4c2e0d9b7a5
+      responses:
+        '200':
+          description: Nauja žetonų pora
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+              example:
+                accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwicm9sZSI6InBsYXllciIsImlhdCI6MTc5NTExMDUwMCwiZXhwIjoxNzk1MTExNDAwfQ.Jd8kq2Vn0mXc5bT7yR1wP9sL3hA6fE4uZ0oN2iG8vKs
+                refreshToken: 9a1e5c3b7d2f4a6e8c0b9d1f3a5c7e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a3c
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: Atnaujinimo žetonas neteisingas, atšauktas arba nebegalioja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Invalid or expired refresh token }
+        '403':
+          description: Naudotojas užblokuotas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: User is blocked }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Atsijungti
+      description: Atšaukia pateiktą atnaujinimo žetoną.
+      operationId: logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+            example:
+              refreshToken: 9a1e5c3b7d2f4a6e8c0b9d1f3a5c7e2b4d6f8a0c1e3b5d7f9a2c4e6b8d0f1a3c
+      responses:
+        '204': { description: Atsijungta (atsakymo kūno nėra) }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: Atnaujinimo žetonas neteisingas arba jau atšauktas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Invalid or expired refresh token }
+
+  # ---------------------------------------------------------------- Games
+  /games:
+    get:
+      tags: [Games]
+      summary: Žaidimų sąrašas (puslapiavimas ir filtravimas)
+      description: Viešas metodas – autentifikacija nereikalinga.
+      operationId: getAllGames
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          description: Filtras pagal žaidimo būseną
+          schema: { $ref: '#/components/schemas/GameStatus' }
+        - name: is_public
+          in: query
+          description: Filtras pagal viešumą
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Žaidimų puslapis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameList' }
+              example:
+                data:
+                  - id: 3
+                    name: Žaliakalnio iššūkis
+                    created_by: 4
+                    zone_id: 3
+                    status: active
+                    is_public: true
+                    is_locked: true
+                    max_players: 8
+                    head_start_min: 30
+                    created_at: '2026-10-17T18:00:00.000Z'
+                    started_at: '2026-10-18T10:00:00.000Z'
+                    ended_at: null
+                    _links:
+                      self: { href: /games/3 }
+                      rounds: { href: /games/3/rounds }
+                page: 1
+                limit: 10
+                total: 1
+        '400':
+          description: Neteisingi puslapiavimo arba filtrų parametrai
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                limit:
+                  value: { error: 'page and limit must be positive integers, limit ≤ 50' }
+                status:
+                  value: { error: 'status must be one of: lobby, active, finished' }
+                isPublic:
+                  value: { error: is_public must be true or false }
+
+    post:
+      tags: [Games]
+      summary: Sukurti žaidimą
+      description: Kūrėju tampa prisijungęs naudotojas.
+      operationId: createGame
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GameCreate' }
+            example:
+              name: Vakaras Ąžuolyne
+              zone_id: 4
+              is_public: true
+              max_players: 6
+              head_start_min: 15
+      responses:
+        '201':
+          description: Žaidimas sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Game' }
+              example:
+                id: 7
+                name: Vakaras Ąžuolyne
+                created_by: 2
+                zone_id: 4
+                status: lobby
+                is_public: true
+                is_locked: false
+                max_players: 6
+                head_start_min: 15
+                created_at: '2026-11-19T17:45:03.112Z'
+                started_at: null
+                ended_at: null
+                _links:
+                  self: { href: /games/7 }
+                  rounds: { href: /games/7/rounds }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422':
+          description: Nurodyta zona neegzistuoja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Referenced resource does not exist }
+
+  /games/{gameId}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      tags: [Games]
+      summary: Žaidimo informacija
+      description: |
+        Resursas sudaromas iš kelių esybių: žaidimo, zonos, kūrėjo ir žaidėjų sąrašo.
+      operationId: getGame
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Žaidimas su zona, kūrėju ir žaidėjais
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameDetails' }
+              example:
+                id: 1
+                name: Senamiesčio slėpynės
+                created_by: 2
+                zone_id: 1
+                status: finished
+                is_public: true
+                is_locked: true
+                max_players: 6
+                head_start_min: 15
+                created_at: '2026-10-03T17:00:00.000Z'
+                started_at: '2026-10-04T11:00:00.000Z'
+                ended_at: '2026-10-04T14:20:00.000Z'
+                zone: { id: 1, name: Senamiestis, city: Kaunas }
+                creator: { id: 2, username: tomas_k }
+                players:
+                  - { id: 2, username: tomas_k }
+                  - { id: 3, username: ieva.p }
+                  - { id: 4, username: mantas_r }
+                _links:
+                  self: { href: /games/1 }
+                  rounds: { href: /games/1/rounds }
+        '400': { $ref: '#/components/responses/InvalidGameId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/GameNotFound' }
+
+    put:
+      tags: [Games]
+      summary: Atnaujinti žaidimą
+      description: |
+        Gali tik žaidimo kūrėjas arba administratorius. Reikalingi visi laukai.
+        Zonos po sukūrimo keisti negalima.
+      operationId: updateGame
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GameUpdate' }
+            example:
+              name: Vakaras Ąžuolyne
+              is_public: true
+              is_locked: true
+              max_players: 8
+              head_start_min: 20
+      responses:
+        '200':
+          description: Žaidimas atnaujintas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Game' }
+              example:
+                id: 7
+                name: Vakaras Ąžuolyne
+                created_by: 2
+                zone_id: 4
+                status: lobby
+                is_public: true
+                is_locked: true
+                max_players: 8
+                head_start_min: 20
+                created_at: '2026-11-19T17:45:03.112Z'
+                started_at: null
+                ended_at: null
+                _links:
+                  self: { href: /games/7 }
+                  rounds: { href: /games/7/rounds }
+        '400':
+          description: Neteisingas ID arba validacijos klaida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Naudotojas nėra žaidimo kūrėjas ar administratorius
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: You can only modify your own games }
+        '404': { $ref: '#/components/responses/GameNotFound' }
+
+    delete:
+      tags: [Games]
+      summary: Ištrinti žaidimą
+      description: |
+        Gali tik žaidimo kūrėjas arba administratorius. Kartu ištrinami žaidimo
+        raundai ir įvykiai.
+      operationId: deleteGame
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Žaidimas ištrintas (atsakymo kūno nėra) }
+        '400': { $ref: '#/components/responses/InvalidGameId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Naudotojas nėra žaidimo kūrėjas ar administratorius
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: You can only delete your own games }
+        '404': { $ref: '#/components/responses/GameNotFound' }
+
+  # ---------------------------------------------------------------- Rounds
+  /games/{gameId}/rounds:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      tags: [Rounds]
+      summary: Žaidimo raundų sąrašas
+      operationId: getAllRounds
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Raundai, surikiuoti pagal numerį
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Round' }
+              example:
+                - id: 1
+                  game_id: 1
+                  found_by: 1
+                  round_number: 1
+                  status: finished
+                  started_at: '2026-10-04T11:00:00.000Z'
+                  ended_at: '2026-10-04T11:52:00.000Z'
+                  _links:
+                    self: { href: /games/1/rounds/1 }
+                    game: { href: /games/1 }
+                    events: { href: /games/1/rounds/1/events }
+        '400': { $ref: '#/components/responses/InvalidGameId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/GameNotFound' }
+
+    post:
+      tags: [Rounds]
+      summary: Sukurti raundą
+      description: |
+        Gali tik žaidimo kūrėjas arba administratorius. Užklausos kūnas nereikalingas –
+        raundo numeris priskiriamas automatiškai, būsena – `pending`.
+      operationId: createRound
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201':
+          description: Raundas sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+              example:
+                id: 14
+                game_id: 4
+                found_by: null
+                round_number: 1
+                status: pending
+                started_at: null
+                ended_at: null
+                _links:
+                  self: { href: /games/4/rounds/14 }
+                  game: { href: /games/4 }
+                  events: { href: /games/4/rounds/14/events }
+        '400': { $ref: '#/components/responses/InvalidGameId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/NotGameCreator' }
+        '404': { $ref: '#/components/responses/GameNotFound' }
+        '422':
+          description: Žaidimas jau baigtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Cannot add a round to a finished game }
+
+  /games/{gameId}/rounds/{roundId}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+      - $ref: '#/components/parameters/RoundId'
+    get:
+      tags: [Rounds]
+      summary: Raundo informacija
+      operationId: getRound
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Raundas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+              example:
+                id: 1
+                game_id: 1
+                found_by: 1
+                round_number: 1
+                status: finished
+                started_at: '2026-10-04T11:00:00.000Z'
+                ended_at: '2026-10-04T11:52:00.000Z'
+                _links:
+                  self: { href: /games/1/rounds/1 }
+                  game: { href: /games/1 }
+                  events: { href: /games/1/rounds/1/events }
+        '400': { $ref: '#/components/responses/InvalidId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/RoundNotFound' }
+
+    put:
+      tags: [Rounds]
+      summary: Atnaujinti raundą
+      description: |
+        Gali tik žaidimo kūrėjas arba administratorius. Reikalingi visi laukai.
+        Žaidime vienu metu gali būti tik vienas aktyvus raundas; pabaigos laikas
+        negali būti ankstesnis už pradžios.
+      operationId: updateRound
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoundUpdate' }
+            example:
+              status: active
+              started_at: '2026-11-20T15:00:00.000Z'
+              ended_at: null
+              found_by: null
+      responses:
+        '200':
+          description: Raundas atnaujintas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Round' }
+              example:
+                id: 14
+                game_id: 4
+                found_by: null
+                round_number: 1
+                status: active
+                started_at: '2026-11-20T15:00:00.000Z'
+                ended_at: null
+                _links:
+                  self: { href: /games/4/rounds/14 }
+                  game: { href: /games/4 }
+                  events: { href: /games/4/rounds/14/events }
+        '400':
+          description: Neteisingas ID arba validacijos klaida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/NotGameCreator' }
+        '404': { $ref: '#/components/responses/RoundNotFound' }
+        '409':
+          description: Žaidime jau yra aktyvus raundas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Resource already exists }
+        '422':
+          description: Pažeistas apribojimas (pabaiga ankstesnė už pradžią) arba nurodytas naudotojas neegzistuoja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                constraint:
+                  value: { error: Value violates a constraint }
+                reference:
+                  value: { error: Referenced resource does not exist }
+
+    delete:
+      tags: [Rounds]
+      summary: Ištrinti raundą
+      description: Gali tik administratorius. Kartu ištrinami raundo įvykiai.
+      operationId: deleteRound
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Raundas ištrintas (atsakymo kūno nėra) }
+        '400': { $ref: '#/components/responses/InvalidId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/AdminOnly' }
+        '404': { $ref: '#/components/responses/RoundNotFound' }
+
+  # ---------------------------------------------------------------- Events
+  /games/{gameId}/rounds/{roundId}/events:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+      - $ref: '#/components/parameters/RoundId'
+    get:
+      tags: [Events]
+      summary: Raundo įvykių sąrašas
+      operationId: getAllEvents
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Įvykiai, surikiuoti pagal sukūrimo laiką
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Event' }
+              example:
+                - id: 1
+                  round_id: 1
+                  template_id: 1
+                  created_by: 2
+                  resolved_by: 3
+                  status: answered
+                  answer: Taip
+                  created_at: '2026-10-04T11:20:00.000Z'
+                  resolved_at: '2026-10-04T11:21:00.000Z'
+                  _links:
+                    self: { href: /games/1/rounds/1/events/1 }
+                    round: { href: /games/1/rounds/1 }
+        '400': { $ref: '#/components/responses/InvalidId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/RoundNotFound' }
+
+    post:
+      tags: [Events]
+      summary: Sukurti įvykį
+      description: |
+        Gali bet kuris prisijungęs naudotojas; įvykio autoriumi tampa jis pats.
+        Įvykį galima kurti tik aktyviame raunde.
+      operationId: createEvent
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventCreate' }
+            example:
+              template_id: 3
+      responses:
+        '201':
+          description: Įvykis sukurtas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+              example:
+                id: 21
+                round_id: 8
+                template_id: 3
+                created_by: 2
+                resolved_by: null
+                status: pending
+                answer: null
+                created_at: '2026-11-19T17:50:41.903Z'
+                resolved_at: null
+                _links:
+                  self: { href: /games/3/rounds/8/events/21 }
+                  round: { href: /games/3/rounds/8 }
+        '400':
+          description: Neteisingas ID arba validacijos klaida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/RoundNotFound' }
+        '422':
+          description: Raundas neaktyvus arba šablonas neegzistuoja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                inactive:
+                  value: { error: Events can only be added to an active round }
+                template:
+                  value: { error: Referenced resource does not exist }
+
+  /games/{gameId}/rounds/{roundId}/events/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+      - $ref: '#/components/parameters/RoundId'
+      - $ref: '#/components/parameters/EventId'
+    get:
+      tags: [Events]
+      summary: Įvykio informacija
+      operationId: getEvent
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Įvykis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+              example:
+                id: 2
+                round_id: 1
+                template_id: 8
+                created_by: 3
+                resolved_by: 5
+                status: completed
+                answer: Nuotrauka su pilies bokštu
+                created_at: '2026-10-04T11:25:00.000Z'
+                resolved_at: '2026-10-04T11:40:00.000Z'
+                _links:
+                  self: { href: /games/1/rounds/1/events/2 }
+                  round: { href: /games/1/rounds/1 }
+        '400': { $ref: '#/components/responses/InvalidId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/EventNotFound' }
+
+    put:
+      tags: [Events]
+      summary: Atnaujinti įvykį
+      description: |
+        Gali tik įvykio autorius arba administratorius. Reikalingi visi laukai.
+        `resolved_at` turi būti `null` tada ir tik tada, kai būsena `pending`.
+      operationId: updateEvent
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventUpdate' }
+            example:
+              status: answered
+              answer: Ne, esu toliau
+              resolved_by: 4
+              resolved_at: '2026-11-19T17:55:00.000Z'
+      responses:
+        '200':
+          description: Įvykis atnaujintas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+              example:
+                id: 21
+                round_id: 8
+                template_id: 3
+                created_by: 2
+                resolved_by: 4
+                status: answered
+                answer: Ne, esu toliau
+                created_at: '2026-11-19T17:50:41.903Z'
+                resolved_at: '2026-11-19T17:55:00.000Z'
+                _links:
+                  self: { href: /games/3/rounds/8/events/21 }
+                  round: { href: /games/3/rounds/8 }
+        '400':
+          description: Neteisingas ID arba validacijos klaida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Naudotojas nėra įvykio autorius ar administratorius
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: You can only modify your own events }
+        '404': { $ref: '#/components/responses/EventNotFound' }
+        '422':
+          description: Būsena nesuderinama su `resolved_at` arba nurodytas naudotojas neegzistuoja
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                constraint:
+                  value: { error: Value violates a constraint }
+                reference:
+                  value: { error: Referenced resource does not exist }
+
+    delete:
+      tags: [Events]
+      summary: Ištrinti įvykį
+      description: Gali tik administratorius.
+      operationId: deleteEvent
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Įvykis ištrintas (atsakymo kūno nėra) }
+        '400': { $ref: '#/components/responses/InvalidId' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/AdminOnly' }
+        '404': { $ref: '#/components/responses/EventNotFound' }
+
+  # ---------------------------------------------------------------- Reference
+  /zones:
+    get:
+      tags: [Reference]
+      summary: Zonų sąrašas
+      description: Viešas metodas. Naudojamas renkantis zoną kuriant žaidimą.
+      operationId: getZones
+      responses:
+        '200':
+          description: Zonos, surikiuotos pagal miestą ir pavadinimą
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Zone' }
+              example:
+                - { id: 4, city: Kaunas, name: Ąžuolynas }
+                - { id: 2, city: Kaunas, name: Naujamiestis }
+                - { id: 1, city: Kaunas, name: Senamiestis }
+
+  /event-templates:
+    get:
+      tags: [Reference]
+      summary: Įvykių šablonų sąrašas
+      description: |
+        Viešas metodas. Su `zoneId` grąžinami nurodytos zonos ir bendri
+        (`zone_id = null`) šablonai; be parametro – visi šablonai.
+      operationId: getEventTemplates
+      parameters:
+        - name: zoneId
+          in: query
+          description: Zonos ID
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: Šablonai, surikiuoti pagal tipą ir pavadinimą
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EventTemplate' }
+              example:
+                - id: 1
+                  type: question
+                  name: Ar esi į šiaurę nuo manęs?
+                  description: Taip/Ne klausimas. Atmeta pusę zonos.
+                  zone_id: null
+                - id: 8
+                  type: task
+                  name: Nusifotografuok prie Kauno pilies
+                  description: Nuotraukoje turi matytis pilies bokštas.
+                  zone_id: 1
+        '400':
+          description: Neteisingas zoneId
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: zoneId must be a positive integer }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Prieigos žetonas (`accessToken`), gautas per `/auth/login` arba
+        `/auth/refresh`. Galioja 15 min.
+
+  parameters:
+    GameId:
+      name: gameId
+      in: path
+      required: true
+      description: Žaidimo ID
+      schema: { type: integer, minimum: 1 }
+    RoundId:
+      name: roundId
+      in: path
+      required: true
+      description: Raundo ID
+      schema: { type: integer, minimum: 1 }
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      description: Įvykio ID
+      schema: { type: integer, minimum: 1 }
+    Page:
+      name: page
+      in: query
+      description: Puslapio numeris
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      description: Įrašų skaičius puslapyje
+      schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+
+  responses:
+    ValidationError:
+      description: Užklausos kūnas neatitinka schemos arba JSON sugadintas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+          examples:
+            validation:
+              value:
+                error: Validation failed
+                details:
+                  - origin: string
+                    code: too_small
+                    minimum: 8
+                    inclusive: true
+                    path: [password]
+                    message: 'Too small: expected string to have >=8 characters'
+            malformed:
+              value: { error: Malformed JSON body }
+    Unauthorized:
+      description: Nėra prieigos žetono arba jis negalioja
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            missing:
+              value: { error: Missing or invalid Authorization header }
+            expired:
+              value: { error: Invalid or expired access token }
+    AdminOnly:
+      description: Veiksmas leidžiamas tik administratoriui
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Forbidden }
+    NotGameCreator:
+      description: Naudotojas nėra žaidimo kūrėjas ar administratorius
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Only the game creator can manage rounds }
+    InvalidGameId:
+      description: Neteisingas žaidimo ID
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Invalid game id }
+    InvalidId:
+      description: Neteisingas žaidimo, raundo arba įvykio ID
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            game:
+              value: { error: Invalid game id }
+            round:
+              value: { error: Invalid round id }
+            event:
+              value: { error: Invalid event id }
+    GameNotFound:
+      description: Žaidimas nerastas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Game not found }
+    RoundNotFound:
+      description: Žaidimas arba raundas nerastas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            game:
+              value: { error: Game not found }
+            round:
+              value: { error: Round not found }
+    EventNotFound:
+      description: Žaidimas, raundas arba įvykis nerastas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            game:
+              value: { error: Game not found }
+            round:
+              value: { error: Round not found }
+            event:
+              value: { error: Event not found }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    ValidationError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string, example: Validation failed }
+        details:
+          type: array
+          description: Zod validacijos klaidos
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              path:
+                type: array
+                items: { type: string }
+              message: { type: string }
+
+    Link:
+      type: object
+      properties:
+        href: { type: string }
+
+    # --- Auth
+    RegisterRequest:
+      type: object
+      required: [email, username, password]
+      properties:
+        email: { type: string, format: email }
+        username: { type: string, minLength: 2, maxLength: 50 }
+        password: { type: string, minLength: 8, maxLength: 72 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    TokenPair:
+      type: object
+      properties:
+        accessToken: { type: string, description: 'JWT (HS256), galioja 15 min.' }
+        refreshToken: { type: string, description: 'Atsitiktinė eilutė, galioja 7 d.' }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [player, admin] }
+        is_blocked: { type: boolean }
+        avatar_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    # --- Games
+    GameStatus:
+      type: string
+      enum: [lobby, active, finished]
+    Game:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        created_by: { type: integer }
+        zone_id: { type: integer }
+        status: { $ref: '#/components/schemas/GameStatus' }
+        is_public: { type: boolean }
+        is_locked: { type: boolean }
+        max_players: { type: integer, minimum: 2, maximum: 20 }
+        head_start_min: { type: integer, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        ended_at: { type: string, format: date-time, nullable: true }
+        _links:
+          type: object
+          properties:
+            self: { $ref: '#/components/schemas/Link' }
+            rounds: { $ref: '#/components/schemas/Link' }
+    GameDetails:
+      allOf:
+        - $ref: '#/components/schemas/Game'
+        - type: object
+          properties:
+            zone: { $ref: '#/components/schemas/Zone' }
+            creator: { $ref: '#/components/schemas/UserSummary' }
+            players:
+              type: array
+              items: { $ref: '#/components/schemas/UserSummary' }
+    GameList:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Game' }
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+    GameCreate:
+      type: object
+      required: [name, zone_id, max_players, head_start_min]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        zone_id: { type: integer, minimum: 1 }
+        is_public: { type: boolean, default: false }
+        max_players: { type: integer, minimum: 2, maximum: 20 }
+        head_start_min: { type: integer, minimum: 1 }
+    GameUpdate:
+      type: object
+      required: [name, is_public, is_locked, max_players, head_start_min]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        is_public: { type: boolean }
+        is_locked: { type: boolean }
+        max_players: { type: integer, minimum: 2, maximum: 20 }
+        head_start_min: { type: integer, minimum: 1 }
+    UserSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+
+    # --- Rounds
+    RoundStatus:
+      type: string
+      enum: [pending, active, finished]
+    Round:
+      type: object
+      properties:
+        id: { type: integer }
+        game_id: { type: integer }
+        found_by: { type: integer, nullable: true }
+        round_number: { type: integer }
+        status: { $ref: '#/components/schemas/RoundStatus' }
+        started_at: { type: string, format: date-time, nullable: true }
+        ended_at: { type: string, format: date-time, nullable: true }
+        _links:
+          type: object
+          properties:
+            self: { $ref: '#/components/schemas/Link' }
+            game: { $ref: '#/components/schemas/Link' }
+            events: { $ref: '#/components/schemas/Link' }
+    RoundUpdate:
+      type: object
+      required: [status, started_at, ended_at, found_by]
+      properties:
+        status: { $ref: '#/components/schemas/RoundStatus' }
+        started_at: { type: string, format: date-time, nullable: true }
+        ended_at: { type: string, format: date-time, nullable: true }
+        found_by: { type: integer, minimum: 1, nullable: true }
+
+    # --- Events
+    EventStatus:
+      type: string
+      enum: [pending, answered, completed]
+    Event:
+      type: object
+      properties:
+        id: { type: integer }
+        round_id: { type: integer }
+        template_id: { type: integer }
+        created_by: { type: integer }
+        resolved_by: { type: integer, nullable: true }
+        status: { $ref: '#/components/schemas/EventStatus' }
+        answer: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time, nullable: true }
+        _links:
+          type: object
+          properties:
+            self: { $ref: '#/components/schemas/Link' }
+            round: { $ref: '#/components/schemas/Link' }
+    EventCreate:
+      type: object
+      required: [template_id]
+      properties:
+        template_id: { type: integer, minimum: 1 }
+    EventUpdate:
+      type: object
+      required: [status, answer, resolved_by, resolved_at]
+      properties:
+        status: { $ref: '#/components/schemas/EventStatus' }
+        answer: { type: string, minLength: 1, maxLength: 500, nullable: true }
+        resolved_by: { type: integer, minimum: 1, nullable: true }
+        resolved_at: { type: string, format: date-time, nullable: true }
+
+    # --- Reference
+    Zone:
+      type: object
+      properties:
+        id: { type: integer }
+        city: { type: string }
+        name: { type: string }
+    EventTemplate:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [question, task] }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        zone_id: { type: integer, nullable: true }

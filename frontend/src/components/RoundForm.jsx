@@ -1,10 +1,6 @@
 import { useState } from "react";
 import { fromLocalInput, toLocalInput } from "../utils/dates";
 
-/*
-  Raundo redagavimo forma (PUT reikalauja visų 4 laukų).
-  Props: round – redaguojamas raundas, players – žaidimo žaidėjai (found_by sąrašui).
-*/
 export default function RoundForm({ round, players, onSubmit, onCancel }) {
   const [values, setValues] = useState({
     status: round.status,
